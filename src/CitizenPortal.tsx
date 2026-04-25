@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Routes,
   Route,
@@ -185,14 +185,21 @@ export function AnnualCashGiftForm({
 
   const startCamera = async () => {
     setIsCapturing(true);
+    setCapturedPhoto(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
       console.error("Camera access failed", err);
-      alert("Camera access failed. Please allow camera permission.");
+      alert("Camera access failed. Please allow camera permission and ensure you are on a secure (HTTPS) connection.");
       setIsCapturing(false);
     }
   };
@@ -222,11 +229,11 @@ export function AnnualCashGiftForm({
 
   // Auto-fetch from masterlist (ONLY for citizen mode or if data not provided)
   useEffect(() => {
-    if (data) return; // Skip fetch if data is passed from table
+    if (data || isReadOnly) return; // Skip fetch if data is passed or read-only mode from table
     
     const fetchMasterlistData = async () => {
-      const searchId = initialCitizenId || (mode === "admin" ? (formData.citizen_id || formData.scid_number) : (user?.citizen_id || user?.id));
-      if (!searchId) return;
+      const searchId = user?.citizen_id || user?.id;
+      if (!searchId || mode === "admin") return;
 
       try {
         const token = localStorage.getItem("token");
@@ -276,7 +283,7 @@ export function AnnualCashGiftForm({
     };
 
     fetchMasterlistData();
-  }, [user?.citizen_id, user?.id, formData.citizen_id, formData.scid_number, initialCitizenId, token, mode, data]);
+  }, [user?.citizen_id, user?.id, token, mode, data, isReadOnly]);
 
   useEffect(() => {
     if (formData.birth_date) {
@@ -541,7 +548,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="citizen_id"
-                    value={formData.citizen_id}
+                    value={data?.citizen_id || data?.id || formData.citizen_id}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -557,7 +564,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="scid_number"
-                    value={formData.scid_number}
+                    value={data?.scid_number || formData.scid_number}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -573,7 +580,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="first_name"
-                    value={formData.first_name}
+                    value={data?.first_name || formData.first_name}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -594,7 +601,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="middle_name"
-                    value={formData.middle_name}
+                    value={data?.middle_name || formData.middle_name}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -610,7 +617,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="last_name"
-                    value={formData.last_name}
+                    value={data?.last_name || formData.last_name}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -631,7 +638,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="date"
                     name="birth_date"
-                    value={formData.birth_date}
+                    value={data?.birth_date || formData.birth_date}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -652,7 +659,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="number"
                     name="age"
-                    value={formData.age}
+                    value={data?.age || formData.age}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -673,7 +680,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="sex"
-                    value={formData.sex}
+                    value={data?.sex || formData.sex}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -689,7 +696,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="civil_status"
-                    value={formData.civil_status}
+                    value={data?.civil_status || formData.civil_status}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -719,7 +726,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="tel"
                     name="contact_number"
-                    value={formData.contact_number}
+                    value={data?.contact_number || formData.contact_number}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -754,7 +761,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="address"
-                    value={formData.address}
+                    value={data?.address || formData.address}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -770,7 +777,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="barangay"
-                    value={formData.barangay}
+                    value={data?.barangay || formData.barangay}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -791,7 +798,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="city_municipality"
-                    value={formData.city_municipality}
+                    value={data?.city_municipality || data?.city || formData.city_municipality}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -807,7 +814,7 @@ export function AnnualCashGiftForm({
                   <input
                     type="text"
                     name="province"
-                    value={formData.province}
+                    value={data?.province || formData.province}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
                     className={cn(
@@ -839,7 +846,7 @@ export function AnnualCashGiftForm({
                   <div
                     className={cn(
                       "relative aspect-video rounded-3xl border-2 border-dashed overflow-hidden flex flex-col items-center justify-center transition-all",
-                      capturedPhoto
+                      capturedPhoto || isCapturing
                         ? "border-emerald-500 bg-white"
                         : "border-slate-300 bg-slate-50",
                     )}
@@ -854,11 +861,38 @@ export function AnnualCashGiftForm({
                         <button
                           type="button"
                           onClick={() => setCapturedPhoto(null)}
-                          className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur shadow-sm rounded-xl text-red-500 hover:bg-white transition-all"
+                          className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur shadow-sm rounded-xl text-red-500 hover:bg-white transition-all z-10"
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>
                       </>
+                    ) : isCapturing ? (
+                      <div className="relative w-full h-full">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3 px-4">
+                          <button
+                            type="button"
+                            onClick={capturePhoto}
+                            className="flex-1 max-w-[140px] h-11 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Capture
+                          </button>
+                          <button
+                            type="button"
+                            onClick={stopCamera}
+                            className="flex-1 max-w-[140px] h-11 bg-white/90 backdrop-blur text-slate-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-all shadow-lg flex items-center justify-center gap-2"
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -952,21 +986,26 @@ export function AnnualCashGiftForm({
               </div>
             </div>
 
-            {!isReadOnly && (
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={cn(
-                  "w-full py-5 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all shadow-xl shadow-slate-200/50 flex items-center justify-center gap-2",
-                  isLoading
-                    ? "bg-slate-400 cursor-not-allowed"
-                    : "bg-slate-900 text-white hover:bg-[#EF4444]",
-                )}
-              >
-                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isLoading ? "Submitting..." : "Submit Application"}
-              </button>
-            )}
+            <div className={cn(
+              "sticky bottom-0 bg-white pt-6 pb-2 border-t border-slate-100 z-20 -mx-8 lg:-mx-12 px-8 lg:px-12 mt-12",
+              !onClose && "relative bg-transparent border-none p-0"
+            )}>
+              {(!isReadOnly || (mode === "admin" && data)) && (
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={cn(
+                    "w-full py-5 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all shadow-xl shadow-slate-200/50 flex items-center justify-center gap-2",
+                    isLoading
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-slate-900 text-white hover:bg-[#EF4444]",
+                  )}
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isLoading ? "Submitting..." : "Submit Application"}
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </div>
@@ -3448,22 +3487,37 @@ function FeedbackForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    category: "General Concern",
+    category: "Feedback",
     description: "",
   });
 
-  // Dummy Concern History (would normally be fetched)
-  const concernHistory = [
-    {
-      id: "TKT-C1",
-      type: "Complaint",
-      title: "Accessibility Ramp Inquiry",
-      description:
-        "I would like to inquire about the installation of accessibility ramps in our local barangay hall.",
-      date: "2024-10-15",
-      status: "OPEN",
-    },
-  ];
+  const [history, setHistory] = useState<any[]>([]);
+
+  const fetchHistory = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const response = await fetch(
+        "https://api-dbosca.phoenix.com.ph/api/feedback-concerns",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        },
+      );
+      const result = await response.json();
+      if (response.ok) {
+        setHistory(result.data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -3512,8 +3566,8 @@ function FeedbackForm() {
       formDataToSend.append("address", "N/A");
       formDataToSend.append("contact_number", "0000000000");
       formDataToSend.append("email", user.email || "default@email.com");
-      formDataToSend.append("category", formData.category);
-      formDataToSend.append("subject", "Concern Submission");
+      formDataToSend.append("category", formData.category.toLowerCase());
+      formDataToSend.append("subject", `${formData.category} Submission`);
       formDataToSend.append("message", formData.description);
 
       const response = await fetch(
@@ -3532,8 +3586,10 @@ function FeedbackForm() {
 
       if (response.ok) {
         setIsSubmitted(true);
+        setFormData((prev) => ({ ...prev, description: "" }));
+        fetchHistory();
         setTimeout(() => {
-          navigate("/portal");
+          setIsSubmitted(false);
         }, 3000);
       } else {
         setError(
@@ -3600,11 +3656,8 @@ function FeedbackForm() {
                       }
                       className="px-4 py-2 bg-white text-[#EF4444] rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer"
                     >
-                      <option value="Complaint">Complaint</option>
                       <option value="Feedback">Feedback</option>
-                      <option value="Inquiry">Inquiry</option>
-                      <option value="Request">Request</option>
-                      <option value="General Concern">General Concern</option>
+                      <option value="Concern">Concern</option>
                     </select>
                   </div>
                 </div>
@@ -3658,7 +3711,7 @@ function FeedbackForm() {
               </div>
 
               <div className="space-y-4">
-                {concernHistory.map((concern) => (
+                {[...history].reverse().map((concern) => (
                   <div
                     key={concern.id}
                     className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm hover:shadow-md transition-all space-y-4"
@@ -3666,34 +3719,28 @@ function FeedbackForm() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <span className="px-3 py-1 bg-rose-50 text-[10px] font-bold text-[#EF4444] rounded-full uppercase tracking-widest border border-rose-100">
-                          {concern.type}
+                          {concern.category}
                         </span>
                         <span className="text-[10px] font-bold text-slate-300 tracking-wider">
-                          {concern.id}
+                          #{concern.id}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-blue-500">
                         <Clock className="w-3 h-3" />
                         <span className="text-[10px] font-bold uppercase tracking-widest">
-                          {concern.status}
+                          {concern.status || "OPEN"}
                         </span>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <h4 className="text-lg font-bold text-slate-900 tracking-tight">
-                        {concern.title}
-                      </h4>
-                      <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
-                        {concern.description}
+                      <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
+                        {concern.message}
                       </p>
                     </div>
                     <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
                       <span className="text-[11px] font-medium text-slate-300">
-                        {concern.date}
+                        {new Date(concern.submitted_at).toLocaleDateString()}
                       </span>
-                      <button className="text-[11px] font-bold text-blue-500 uppercase tracking-widest hover:underline">
-                        View Full Log
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -3860,9 +3907,16 @@ function UserProfile() {
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(video, 0, 0);
-      const imageData = canvas.toDataURL("image/jpeg");
-      setPreviewUrl(imageData);
-      setFormData((prev) => ({ ...prev, id_file: imageData }));
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], "philhealth_id.jpg", { type: "image/jpeg" });
+          setFormData((prev) => ({ ...prev, id_file: file }));
+          if (previewUrl && previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(previewUrl);
+          }
+          setPreviewUrl(URL.createObjectURL(blob));
+        }
+      }, "image/jpeg");
       stopCamera();
     }
   };
@@ -3900,13 +3954,19 @@ function UserProfile() {
       }
 
       const formDataToSend = new FormData();
+      const u = user?.data || user;
 
-      // Only include required fields as per instructions
-      formDataToSend.append(
-        "citizen_id",
-        String(user.citizen_id || user.id || ""),
-      );
-      formDataToSend.append("philhealth_id_number", formData.philhealth_number);
+      formDataToSend.append("citizen_id", String(u.citizen_id || u.id || ""));
+      formDataToSend.append("user_id", String(u.id || ""));
+      formDataToSend.append("scid_number", String(u.scid_number || ""));
+      formDataToSend.append("first_name", String(u.first_name || ""));
+      formDataToSend.append("last_name", String(u.last_name || ""));
+      formDataToSend.append("age", String(u.age || ""));
+      formDataToSend.append("contact_number", String(u.contact_number || ""));
+      formDataToSend.append("barangay", String(u.barangay || ""));
+      formDataToSend.append("city_municipality", String(u.city_municipality || u.city || ""));
+      formDataToSend.append("province", String(u.province || ""));
+      formDataToSend.append("philhealth_number", formData.philhealth_number);
 
       if (formData.id_file instanceof File) {
         formDataToSend.append("id_file", formData.id_file);
@@ -4225,7 +4285,9 @@ function UserProfile() {
                           <div className="relative group">
                             <input
                               type="file"
+                              name="id_file"
                               accept="image/*,.pdf"
+                              capture="environment"
                               onChange={handleFileChange}
                               disabled={isCameraOpen}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
